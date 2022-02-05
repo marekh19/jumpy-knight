@@ -18,6 +18,9 @@ my_font = pygame.font.Font('fonts/advanced_pixel-7.ttf', 50)
 game_active = False
 start_time = 0
 score = 0
+high_score_file = open(r'highscore','r+')
+high_score = int(high_score_file.read())
+high_score_file.close()
 
 sky_surf = pygame.image.load('images/sky.png').convert()
 ground_surf = pygame.image.load('images/ground.png').convert()
@@ -87,12 +90,30 @@ while True:
 
         score_message = my_font.render(f'Your score: {score}', False, '#333333')
         score_message_rect = score_message.get_rect(center=(640, 520))
+        
+        high_score_message = my_font.render(f'High score: {high_score}', False, '#333333')
+        high_score_rect = high_score_message.get_rect(center=(640, 600))
+
+        new_high_score = my_font.render('NEW HIGH SCORE!', False, '#333333')
+        new_high_score_rect = new_high_score.get_rect(center=(640, 600))
+
+
+        if score > high_score:
+            high_score = score
+            high_score_file = open(r'highscore','r+')
+            high_score_file.write(f'{score}')
+            high_score_file.close()
 
         screen.blit(game_title_surf, game_title_rect)
         if score == 0:
             screen.blit(instruction_surf, instruction_rect)
+            screen.blit(high_score_message, high_score_rect)
+        elif score == high_score:
+            screen.blit(score_message, score_message_rect)
+            screen.blit(new_high_score, new_high_score_rect)
         else:
             screen.blit(score_message, score_message_rect)
+            screen.blit(high_score_message, high_score_rect)
 
     pygame.display.update()
     clock.tick(60)
