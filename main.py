@@ -155,7 +155,6 @@ while True:
                     bat_frame_index = 0
                 bat_surf = bat_frames[bat_frame_index]
 
-
         else:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 game_active = True
