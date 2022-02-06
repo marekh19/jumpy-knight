@@ -113,7 +113,7 @@ obstacle_timer = pygame.USEREVENT + 1
 pygame.time.set_timer(obstacle_timer, 1500)
 
 shadowwalker_animation_timer = pygame.USEREVENT + 2
-pygame.time.set_timer(shadowwalker_animation_timer, 500)
+pygame.time.set_timer(shadowwalker_animation_timer, 400)
 
 bat_animation_timer = pygame.USEREVENT + 3
 pygame.time.set_timer(bat_animation_timer, 200)
@@ -140,6 +140,21 @@ while True:
                     obstacle_rect_list.append(shadowwalker_surf.get_rect(bottomright=(randint(900, 1280), 500)))
                 else:
                     obstacle_rect_list.append(bat_surf.get_rect(bottomright=(randint(900, 1280), 350)))
+            
+            if event.type == shadowwalker_animation_timer:
+                if shadowwalker_frame_index == 0:
+                    shadowwalker_frame_index = 1
+                else:
+                    shadowwalker_frame_index = 0
+                shadowwalker_surf = shadowwalker_frames[shadowwalker_frame_index]
+            
+            if event.type == bat_animation_timer:
+                if bat_frame_index == 0:
+                    bat_frame_index = 1
+                else:
+                    bat_frame_index = 0
+                bat_surf = bat_frames[bat_frame_index]
+
 
         else:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
