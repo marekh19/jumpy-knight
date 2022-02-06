@@ -1,6 +1,79 @@
 import pygame
 from sys import exit
-from random import randint
+from random import randint, choice
+
+
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        player_walk_1 = pygame.image.load('images/player_1.png').convert_alpha()
+        self.player_walk_2 = pygame.image.load('images/player_2.png').convert_alpha()
+        self.player_walk = [player_walk_1, self.player_walk_2]
+        self.player_index = 0
+
+        self.image = self.player_walk[self.player_index]
+        self.rect = self.image.get_rect(midbottom=(120, 500))
+        self.gravity = 0
+
+    def player_input(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_SPACE] and self.rect.bottom >= 500:
+            self.gravity = -25
+
+    def apply_gravity(self):
+        self.gravity += 1
+        self.rect.y += self.gravity
+        if self.rect.bottom >= 500:
+            self.rect.bottom = 500
+
+    def animation_state(self):
+        if self.rect.bottom < 500:
+            self.image = self.player_walk_2
+        else:
+            self.player_index += 0.1
+            if self.player_index >= len(self.player_walk):
+                self.player_index = 0
+            self.image = self.player_walk[int(self.player_index)]
+
+    def update(self):
+        self.player_input()
+        self.apply_gravity()
+        self.animation_state()
+
+
+class Obstacle(pygame.sprite.Sprite):
+    def __init__(self, type):
+        super().__init__()
+
+        if type == 'bat':
+            bat_1 = pygame.image.load('images/bat_1.png').convert_alpha()
+            bat_2 = pygame.image.load('images/bat_2.png').convert_alpha()
+            self.frames = [bat_1, bat_2]
+            y_pos = 350
+        if type == 'shadowwalker':
+            shadowwalker_1 = pygame.image.load('images/shadowwalker_1.png').convert_alpha()
+            shadowwalker_2 = pygame.image.load('images/shadowwalker_2.png').convert_alpha()
+            self.frames = [shadowwalker_1, shadowwalker_2]
+            y_pos = 500
+
+        self.animation_index = 0
+        self.image = self.frames[self.animation_index]
+        self.rect = self.image.get_rect(midbottom=(randint(1400, 1700), y_pos))
+
+    def animation_state(self):
+        self.animation_index += 0.1
+        if self.animation_index >= len(self.frames):
+            self.animation_index = 0
+        self.image = self.frames[int(self.animation_index)]
+
+    def update(self):
+        self.animation_state()
+        self.rect.x -= 7
+        self.destroy()
+
+    def destroy(self):
+        if self.rect.x <= -200:
+            self.kill()
 
 
 def display_score():
@@ -11,29 +84,12 @@ def display_score():
     return current_time
 
 
-def obstacle_movement(obstacle_list):
-    if obstacle_list:
-        for obstacle_rect in obstacle_list:
-            obstacle_rect.x -= 7
-
-            if obstacle_rect.bottom == 500:
-                screen.blit(shadowwalker_surf, obstacle_rect)
-            if obstacle_rect.bottom == 350:
-                screen.blit(bat_surf, obstacle_rect)
-
-        obstacle_list = [obstacle for obstacle in obstacle_list if obstacle.x > -200]
-
-        return obstacle_list
+def collision_sprite():
+    if pygame.sprite.spritecollide(player.sprite, obstacle_group, False):
+        obstacle_group.empty()
+        return False
     else:
-        return []
-
-
-def collisions(player, obstacles):
-    if obstacles:
-        for obstacle_rect in obstacles:
-            if player.colliderect(obstacle_rect):
-                return False
-    return True
+        return True
 
 
 def read_highscore():
@@ -41,20 +97,6 @@ def read_highscore():
     high_score = int(high_score_file.read())
     high_score_file.close()
     return high_score
-
-
-def player_animation():
-    # play walking animation if player is on the floor
-    # display the jump surface when player is above ground
-    global player_surf, player_index
-
-    if player_rect.bottom < 500:
-        player_surf = player_walk_2
-    else:
-        player_index += 0.1
-        if player_index >= len(player_walk):
-            player_index = 0
-        player_surf = player_walk[int(player_index)]
 
 
 # Base setup
@@ -68,38 +110,19 @@ start_time = 0
 score = 0
 high_score = read_highscore()
 
+# Groups
+player = pygame.sprite.GroupSingle()
+player.add(Player())
+
+obstacle_group = pygame.sprite.Group()
+
 # Environment
 sky_surf = pygame.image.load('images/sky.png').convert()
 ground_surf = pygame.image.load('images/ground.png').convert()
 
-# Shadowwalker
-shadowwalker_frame_1 = pygame.image.load('images/shadowwalker_1.png').convert_alpha()
-shadowwalker_frame_2 = pygame.image.load('images/shadowwalker_2.png').convert_alpha()
-shadowwalker_frames = [shadowwalker_frame_1, shadowwalker_frame_2]
-shadowwalker_frame_index = 0
-shadowwalker_surf = shadowwalker_frames[shadowwalker_frame_index]
-
-# Bat
-bat_frame_1 = pygame.image.load('images/bat_1.png').convert_alpha()
-bat_frame_2 = pygame.image.load('images/bat_2.png').convert_alpha()
-bat_frames = [bat_frame_1, bat_frame_2]
-bat_frame_index = 0
-bat_surf = bat_frames[bat_frame_index]
-
-obstacle_rect_list = []
-
-# Player
-player_walk_1 = pygame.image.load('images/player_1.png').convert_alpha()
-player_walk_2 = pygame.image.load('images/player_2.png').convert_alpha()
-player_walk = [player_walk_1, player_walk_2]
-player_index = 0
-
-player_surf = player_walk[player_index]
-player_rect = player_surf.get_rect(midbottom=(80, 500))
-
-
 # Intro screen
-player_stand = pygame.transform.rotozoom(player_walk_1, 0, 2)
+player_stand = pygame.image.load('images/player_1.png').convert_alpha()
+player_stand = pygame.transform.rotozoom(player_stand, 0, 2)
 player_stand_rect = player_stand.get_rect(center=(640, 360))
 
 game_title_surf = my_font.render('Jumpy Knight', False, '#333333')
@@ -110,14 +133,9 @@ instruction_rect = instruction_surf.get_rect(center=(640, 520))
 
 # Timer
 obstacle_timer = pygame.USEREVENT + 1
-pygame.time.set_timer(obstacle_timer, 1500)
+pygame.time.set_timer(obstacle_timer, 1400)
 
-shadowwalker_animation_timer = pygame.USEREVENT + 2
-pygame.time.set_timer(shadowwalker_animation_timer, 400)
-
-bat_animation_timer = pygame.USEREVENT + 3
-pygame.time.set_timer(bat_animation_timer, 200)
-
+# Game runtime
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -125,35 +143,8 @@ while True:
             exit()
 
         if game_active:
-            # Click player to jump
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if player_rect.collidepoint(event.pos) and player_rect.bottom >= 500:
-                    player_gravity = -25
-
-            # Hit space to jump
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE and player_rect.bottom >= 500:
-                    player_gravity = -25
-
             if event.type == obstacle_timer:
-                if randint(0, 2):
-                    obstacle_rect_list.append(shadowwalker_surf.get_rect(bottomright=(randint(900, 1280), 500)))
-                else:
-                    obstacle_rect_list.append(bat_surf.get_rect(bottomright=(randint(900, 1280), 350)))
-            
-            if event.type == shadowwalker_animation_timer:
-                if shadowwalker_frame_index == 0:
-                    shadowwalker_frame_index = 1
-                else:
-                    shadowwalker_frame_index = 0
-                shadowwalker_surf = shadowwalker_frames[shadowwalker_frame_index]
-            
-            if event.type == bat_animation_timer:
-                if bat_frame_index == 0:
-                    bat_frame_index = 1
-                else:
-                    bat_frame_index = 0
-                bat_surf = bat_frames[bat_frame_index]
+                obstacle_group.add(Obstacle(choice(['bat', 'shadowwalker', 'shadowwalker'])))
 
         else:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
@@ -166,27 +157,19 @@ while True:
         score = display_score()
 
         # Player
-        player_gravity += 1
-        player_rect.y += player_gravity
-        if player_rect.bottom >= 500:
-            player_rect.bottom = 500
-        player_animation()
-        screen.blit(player_surf, player_rect)
+        player.draw(screen)
+        player.update()
 
-        # Obstable movement
-        obstacle_rect_list = obstacle_movement(obstacle_rect_list)
+        # Obstacles
+        obstacle_group.draw(screen)
+        obstacle_group.update()
 
         # Collision
-        game_active = collisions(player_rect, obstacle_rect_list)
+        game_active = collision_sprite()
 
     else:
         screen.fill('#84daf3')
         screen.blit(player_stand, player_stand_rect)
-
-        # After game over, place player back to starting point & despawn enemies
-        obstacle_rect_list.clear()
-        player_rect.midbottom = (80, 500)
-        player_gravity = 0
 
         score_message = my_font.render(f'Your score: {score}', False, '#333333')
         score_message_rect = score_message.get_rect(center=(640, 520))
