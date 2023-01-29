@@ -93,8 +93,11 @@ def collision_sprite():
 
 
 def read_highscore():
-    high_score_file = open(r'highscore', 'r')
-    high_score = int(high_score_file.read())
+    high_score_file = open(r'highscore', 'w+')
+    high_score_from_file = high_score_file.read()
+    if high_score_from_file == '':
+        high_score_from_file = 0
+    high_score = int(high_score_from_file)
     high_score_file.close()
     return high_score
 
